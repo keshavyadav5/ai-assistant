@@ -16,6 +16,7 @@ const Home = () => {
   const fileInputRef = useRef(null);
   const recognitionRef = useRef(null);
   const bottomRef = useRef(null);
+  const isListeningRef = useRef(false); // new ref to track actual listening state
 
   const [sessionId] = useState(() => crypto.randomUUID());
 
@@ -48,12 +49,13 @@ const Home = () => {
 
       utterance.onstart = () => {
         setIsAIPlaying(true);
-        stopMic();
+        stopMic(); // stop mic while AI speaks
       };
 
       utterance.onend = () => {
         setIsAIPlaying(false);
-        // if (isMicOn) startMic();
+        // Restart mic if it was on before AI started speaking
+        if (isMicOn) startMic();
         resolve();
       };
 
@@ -62,15 +64,11 @@ const Home = () => {
   };
 
   useEffect(() => {
-  if (!selectedScenario) return;
-  if (isAIPlaying) return;
-
-  const timer = setTimeout(() => {
-    startMic();
-  }, 400);
-
-  return () => clearTimeout(timer);
-}, [selectedScenario, isAIPlaying]);
+    if (!selectedScenario) return;
+    if (isAIPlaying) return;
+    // Auto-start mic when scenario selected and AI not speaking
+    // (commented out as in original, but can be enabled)
+  }, [selectedScenario, isAIPlaying]);
 
   /* ---------------- INITIAL GREETING ---------------- */
   useEffect(() => {
@@ -96,6 +94,11 @@ const Home = () => {
     recognition.continuous = false;
     recognition.interimResults = false;
 
+    recognition.onstart = () => {
+      isListeningRef.current = true;
+      setIsMicOn(true);
+    };
+
     recognition.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
       setInput(transcript);
@@ -104,34 +107,46 @@ const Home = () => {
 
     recognition.onerror = (event) => {
       console.error("Speech error:", event.error);
+      isListeningRef.current = false;
+      setIsMicOn(false);
+    };
+
+    recognition.onend = () => {
+      isListeningRef.current = false;
+      setIsMicOn(false);
     };
 
     recognitionRef.current = recognition;
   }, []);
 
-const startMic = () => {
-  if (!recognitionRef.current) return;
-  if (isAIPlaying) return;
-  if (!selectedScenario) return;
+  const startMic = () => {
+    if (!recognitionRef.current) return;
+    if (isAIPlaying) return;
+    if (!selectedScenario) return;
+    if (isListeningRef.current) return; // already listening
 
-  try {
-    recognitionRef.current.start();
-  } catch {}
-};
+    try {
+      recognitionRef.current.start();
+    } catch (err) {
+      console.error("Failed to start mic:", err);
+      setIsMicOn(false);
+    }
+  };
 
   const stopMic = () => {
-    if (recognitionRef.current) {
+    if (recognitionRef.current && isListeningRef.current) {
       recognitionRef.current.stop();
+      // isListeningRef will be set false in onend/onerror
     }
   };
 
   const toggleMic = () => {
     if (isMicOn) {
       stopMic();
+      // isMicOn will be updated by onend/onerror
     } else {
       startMic();
     }
-    setIsMicOn(!isMicOn);
   };
 
   /* ---------------- SCENARIO SELECT ---------------- */
@@ -167,6 +182,7 @@ const startMic = () => {
       if (imageFile) {
         formData.append("image", imageFile);
       }
+      // REMOVED THE ROGUE toggleMic() CALL
 
       const response = await axios.post(
         "http://localhost:5000/api/chat",
@@ -337,12 +353,3 @@ const startMic = () => {
 };
 
 export default Home;
-
-
-{
-  /**
-   * 
-   * 
-   * <Send />
-   */
-}
