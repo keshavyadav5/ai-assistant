@@ -185,7 +185,7 @@ const Home = () => {
       // REMOVED THE ROGUE toggleMic() CALL
 
       const response = await axios.post(
-        "http://localhost:5000/api/chat",
+        "https://ai-assistant-1ntv.onrender.com",
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
