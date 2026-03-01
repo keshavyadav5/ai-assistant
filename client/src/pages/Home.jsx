@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { Mic, MicOff, Plus, Send } from "lucide-react";
 
+const serverURI = import.meta.env.VITE_SERVER_URI
 const Home = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -71,11 +72,11 @@ const Home = () => {
   }, [selectedScenario, isAIPlaying]);
 
   /* ---------------- INITIAL GREETING ---------------- */
-  useEffect(() => {
-    const greeting = "Hello dear. How can I help you today?";
-    setMessages([{ role: "assistant", content: greeting }]);
-    speakText(greeting);
-  }, []);
+  // useEffect(() => {
+  //   const greeting = "Hello dear. How can I help you today?";
+  //   setMessages([{ role: "assistant", content: greeting }]);
+  //   speakText(greeting);
+  // }, []);
 
   /* ---------------- AUTO SCROLL ---------------- */
   useEffect(() => {
@@ -153,7 +154,7 @@ const Home = () => {
   const handleScenarioSelect = async (scenario) => {
     setSelectedScenario(scenario);
 
-    const text = `Great! You selected ${scenario}. Please tell me your issue.`;
+    const text = `Hello dear. You selected ${scenario}. How can I help you today?`;
 
     setMessages((prev) => [...prev, { role: "assistant", content: text }]);
     await speakText(text);
@@ -185,7 +186,7 @@ const Home = () => {
       // REMOVED THE ROGUE toggleMic() CALL
 
       const response = await axios.post(
-        "https://ai-assistant-1ntv.onrender.com",
+        `${serverURI}/api/chat`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );

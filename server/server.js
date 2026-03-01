@@ -8,7 +8,7 @@ dotenv.config();
 const app = express();
 
 app.use(cors({
-  origin: "https://ai-assistant-1-wn6p.onrender.com",
+  origin: process.env.CLIENT,
   credentials: true
 }))
 
